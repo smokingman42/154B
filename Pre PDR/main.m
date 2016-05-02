@@ -235,8 +235,8 @@ legend('Mx PHAA','My PHAA','Mx PLAA','My PLAA','Mx NHAA','My NHAA','Mx Negative 
 
 figure(8)
 hold on;
-plot(z,Sx0./1e3,'Linewidth',2)
-plot(z,Sy0./1e3,'Linewidth',2)
+plot(z,-Sx0./1e3,'Linewidth',2)
+plot(z,-Sy0./1e3,'Linewidth',2)
 xlabel('z (m)')
 ylabel('Shear Force at Sea Level (kN)')
 legend('Sx PHAA','Sy PHAA','Sx PLAA','Sy PLAA','Sx NHAA','Sy NHAA','Sx Negative Dive Gust','Sy Negative Dive Gust','Sx Negative Cruise Gust','Sy Negative Cruise Gust');
@@ -348,8 +348,8 @@ ylabel(strcat('Moments at Altitude (kN/m)'))
 
 figure(12)
 hold on;
-plot(z,Sx0./1e3,'Linewidth',2)
-plot(z,Sy0./1e3,'Linewidth',2)
+plot(z,-Sx0./1e3,'Linewidth',2)
+plot(z,-Sy0./1e3,'Linewidth',2)
 xlabel('z (m)')
 ylabel(strcat('Shear Force at Altitude (kN)'))
 legend('Sx PHAA','Sy PHAA','Sx PLAA','Sy PLAA','Sx NHAA','Sy NHAA','Sx Negative Dive Gust','Sy Negative Dive Gust','Sx Negative Cruise Gust','Sy Negative Cruise Gust');
