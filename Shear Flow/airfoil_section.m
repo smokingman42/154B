@@ -5,7 +5,7 @@ m = 0.02;
 p = 0.4;
 t = 0.12;
 
-c = 1.3462;             % chord length
+c = 1.5;             % chord length
 nx = 500;               % number of increments
 dx = c/nx;  
 x = 0:dx:c;             % even spacing
@@ -164,6 +164,7 @@ end
 Cx = Cx_sum/A_sum;
 Cy = Cy_sum/A_sum;
 
+
 figure
 plot(x,yU,'k',x,yL,'k','Linewidth',2);
 ylim([-0.3 0.3])
@@ -273,6 +274,7 @@ end
 for i = 1:length(x_strL)
     x_strL(i) = x_strL(i) - Cx;
 end
+
 
 Cx = 0;
 Cy = 0;

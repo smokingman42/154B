@@ -5,7 +5,7 @@ c = 1.5;                                 % m          chord length
 S = b*c;                                 % m^2        surface area
 AR = b^2/S;                              %            aspect ratio
 e = 0.79;                                %            Oswald efficiency     
-W = 1100*9.81;                                % N          weight
+W = 1100*9.81;                           % N          weight
    
 L = n*W; % N          lift
 CL = 2*L/rho/V^2/S;                      %            lift coefficient

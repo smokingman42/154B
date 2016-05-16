@@ -10,10 +10,11 @@ bl = 0.015; %m bracket height
 bt = 0.0025; %m bracket thickness`
 theta = 30; %degrees
 alpha = 10; %degrees
+G = E/(2+.6666); % for twist angle Shear modulus
 
 %% Sea Level Analysis
 rho1 = 1.225;                      % kg/m^3     at sea level  
-nz = 100;                         % number of increments along z-axis
+nz = 100;                         % number of  ncrements along z-axis
 
 % PHAA 
 n1 = 4.4;                          %            load factor of PHAA
@@ -173,6 +174,7 @@ A_cap = 1e-5;
 A_str = 5e-6;
 t_spar = st;
 t_skin = kt;
+t_plate = t_skin;
 % locations of spars, spar caps and stringers (nose at the origin of the coordinate)
 x_spar0 = .5;                       % front spar (2 cell beam)
 x_strU0 = [0 .15 .3 .7 .9];                     % upper surface
@@ -254,27 +256,28 @@ for i = 1:nz+1
     My0(i) = My_sum(nz+2-i);
     Sx0(i) = Sx_sum(nz+2-i);
 end
-
+Sx0 = -Sx0;
+Sy0 = -Sy0;
 %% Moment, Shear, and Distributed Load Graphs
 
 figure(9)
 hold on;
 plot(z,Mx0./1e3,'Linewidth',2)
 xlabel('z (m)')
-ylabel('X Moments at Sea Level (kN/m)')
+ylabel('X Moments at Sea Level (kN*m)')
 legend('Mx PHAA','Mx PLAA','Mx NHAA','Mx Negative Dive Gust','Mx Negative Cruise Gust');
 
 figure(10)
 hold on;
 plot(z, My0./1e3, 'Linewidth',2)
 xlabel('z (m)')
-ylabel('Y Momemts at Sea Level (kN/m)')
+ylabel('Y Momemts at Sea Level (kN*m)')
 legend('My PHAA','My PLAA','My NHAA','My Negative Dive Gust','My Negative Cruise Gust');
 
 
 figure(11)
 hold on;
-plot(z,-Sx0./1e3,'Linewidth',2)
+plot(z,Sx0./1e3,'Linewidth',2)
 xlabel('z (m)')
 ylabel('X Shear Force at Sea Level (kN)')
 legend('Sx PHAA','Sx PLAA','Sx NHAA','Sx Negative Dive Gust','Sx Negative Cruise Gust');
@@ -282,7 +285,7 @@ legend('Sx PHAA','Sx PLAA','Sx NHAA','Sx Negative Dive Gust','Sx Negative Cruise
 
 figure(12)
 hold on;
-plot(z,-Sy0./1e3,'Linewidth',2)
+plot(z,Sy0./1e3,'Linewidth',2)
 xlabel('z (m)')
 ylabel('Y Shear Force at Sea Level (kN)')
 legend('Sy PHAA','Sy PLAA','Sy NHAA','Sy Negative Dive Gust','Sy Negative Cruise Gust');
@@ -315,12 +318,26 @@ legend('v PHAA','v PLAA','v NHAA','v Negative Dive Gust','v Negative Cruise Gust
 xlabel('z (m)')
 ylabel('Y Deflection at Sea Level (m)')
 
-Sig_z = (Mx0*(Iyy*0 - Ixy*0) + My0*(Ixx*0 - Ixy*0))/(Ixx*Iyy-Ixy^2);
+% Stress_zz along contour of airfoil and spars 
+nspars = 10; % points along spars 
+yspar1 = yL(i_spar(1)):(h_spar(1))/nspars:yU(i_spar(1)); % points along spar 1
+xspar1 = x(i_spar(1))*ones(1,nspars+1); % corresponding x position for spar 1
+yspar2 = yL(i_spar(2)):(h_spar(2))/nspars:yU(i_spar(2)); % points along spar 2
+xspar2 = x(i_spar(2))*ones(1,nspars+1); % corresponding x position for spar 1
+
+xs = [flip(x),x,xspar1,xspar2];
+ys = [flip(yU),yL,yspar1,yspar2];
+Sig_z = zeros(1,length(xs));
+
+for i = 1:length(xs)
+    
+Sig_z(i) = (Mx0(1)*(Iyy*ys(i) - Ixy*xs(i)) + My0(1)*(Ixx*xs(i) - Ixy*ys(i)))/(Ixx*Iyy-Ixy^2);
+
+end
 
 figure(15)
 hold on;
-plot(z,Sig_z,'Linewidth',2)
-xlabel('z (m)')
+scatter(xs,Sig_z)
 ylabel('Stress_{zz} at Sea Level(N/m^2)');
 legend('PHAA','PLAA','NHAA','Negative Dive Gust','Negative Cruise Gust');
 
@@ -533,9 +550,7 @@ end
 B = [fliplr(BU),BL(2:end)];
 x_boom = [fliplr(x_boomU),x_boomL(2:end)]; % array of x coordinate of booms from top TE to CCW to bottom TE
 y_boom = [fliplr(yU(i_BU(:))),yL(i_BL(2:end))]; % array of y coordinate of booms from top TE to CCW to bottom TE
-L_boom = [fliplr(L_boomU),L_boomL,h_spar(2)];
-
-% HERERERERERERERERERERERERERERERERERE
+L_boom = [fliplr(L_boomU),L_boomL,h_spar(2)]; % array of skin lengths from top TE to lower TE and end spar
 
 figure
 plot(x_boom,y_boom,'ro','markersize',6)
@@ -555,75 +570,116 @@ for i = 1:nq-1
     A(i) = abs(x_boom(i)*(y_boom(i+1)-0) + x_boom(i+1)*(0-y_boom(i)) + x_spar(1)*(y_boom(i)-y_boom(i+1)))/2;
 end
 A(end) = abs(x_boom(end)*(y_boom(1)-0) + x_boom(1)*(0-y_boom(end)) + x_spar(1)*(y_boom(end)-y_boom(1)))/2;
-Asum = sum(A);
+Asum = sum(A); % Total area of cut section 
 
 % calculate the area of each cell
 i_A1 = find(ismember(x_boom,x_spar(1)));
-A1 = A(i_A1(1):i_A1(2)-1);
-A1sum = sum(A1);
-A2sum = Asum - A1sum;
+A1 = A(i_A1(1):i_A1(2)-1); % Area sections from LE to spar
+A1sum = sum(A1); % Area of cell closest to LE
+A2sum = Asum - A1sum; % Area of cell nearest to TE
 
 % calcualte qb at the root of the wing 
-%
-%
-% please finish this part
-%
-%
+qb = zeros(1,nq-1);
+% CHECK C1 and C2 
+c1 = (Sy0(1)*Ixy - Sx0(1)*Ixx)/(Ixx*Iyy - Ixy^2);
+c2 = (Sx0(1)*Ixy - Sy0(1)*Iyy)/(Ixx*Iyy - Ixy^2);
+qb(1) = c1*B(1)*x_boom(1) + c2*B(1)*y_boom(1);
+for i = 2:nq
+   qb(i)= qb(i-1)+ c1*B(i)*x_boom(i) + c2*B(i)*y_boom(i);
+end
 
 % separate cell 1 and cell 2 
 qb1 = qb(i_A1(1):i_A1(2)-1);
 L_boom1 = L_boom(i_A1(1):i_A1(2)-1);
+
 L1sum = sum(L_boom1);
 
 qb2 = [qb(1:i_A1(1)-1),qb(i_A1(2):end)];
 L_boom2 = [L_boom(1:i_A1(1)-1),L_boom(i_A1(2):end)];
+
 % modify distance between booms at the rear spar to compensate the change of the thickness
 L_boom2(end) = L_boom2(end)*t_skin/t_spar; 
 L2sum = sum(L_boom2);
 
 % equations
 syms q01 q02
-% eq1: equating moments of applied shear and pitch moment to moments of internal shear flow
-%
-% please set up equation 1 here by using eq1=...
-%
 
-% eq2: set the angle of twist of each cell to be the same
-%
-% please set up equation 2 here by using eq2=...
-%
-  
+% Twisting
+% Cell 1 sums
+sumA1(1) = 0;
+sumA1(2) = 0;
+for i =  i_A1(1):i_A1(2)-1;
+    sumA1(1) = sumA1(1) + B(i) * x_boom(i) * L_boom(i);
+    sumA1(2) = sumA1(2) + B(i) * y_boom(i) * L_boom(i);
+end
+
+% Cell 2 sums 
+sumA2(1) = 0;
+sumA2(2) = 0;
+
+for i = 1:i_A1(1)-1;
+    sumA2(1) = sumA2(1) + B(i) * x_boom(i) * L_boom(i);
+    sumA2(2) = sumA2(2) + B(i) * y_boom(i) * L_boom(i);
+end 
+
+for i = i_A1(2):length(L_boom);
+    sumA2(1) = sumA2(1) + B(i) * x_boom(i) * L_boom(i);
+    sumA2(2) = sumA2(2) + B(i) * y_boom(i) * L_boom(i);
+end
+    
+% Moments
+msum = 0;
+for i = 1:nq-1;
+    msum = msum + 2*qb(i)*A(i);
+end
+
+% Equating total moments
+eq1 = -M0 + Sx0(1) * .25 * c + 2 * A1sum * q01 + 2 * A2sum * q02 + msum == 0;
+
+% Equating angle of twist in both cells 
+
+eq2 = (1/A1sum)*((q01/t_skin)*L1sum + (q01 - q02) * h_spar(1)/t_spar + c1*sumA1(1)/t_skin + c2*sumA1(2)/t_skin)...
+    - (1/A2sum)*((q02/t_skin)*L2sum + (q02 - q01) * h_spar(2)/t_spar + c1*sumA2(1)/t_skin + c2*sumA2(2)/t_skin + q02*h_spar(2)/t_plate);
+
 [q01,q02] = solve(eq1==0,eq2==0);
+
+q01 = vpa(q01,4)
+q02 = vpa(q02,4)
 
 
 % shear flow along airfoil contour from top right corner to top right corner CCW 
 q = zeros(1,nq);   
-for i = 1:i_A1(1)-1
+for i = 1:i_A1(1)-1 % top cell 2 
     q(i) = qb2(i) + q02;
 end
 
-for i = 1 : length(qb1)
+for i = 1 : length(qb1) % cell 1 
     j = i + i_A1(1) - 1;
     q(j) = qb1(i) + q01;
 end
 
-for i = 1 : nq - i_A1(2) + 1
+for i = 1 : nq - i_A1(2) % bottom cell 2 
     j = i + i_A1(2) - 1;
-    k = i + i_A1(1) - 1;
+    k = j-length(qb2);
     q(j) = qb2(k) + q02;
 end
 
-%
-% please calculate the shear flow in the central spar here
-%
+% Back plate/spar
+q(end) = q02;
 
-% verification:
-%
-% please verify your results in 4 ways (see instructions)
-%
+
+q_spar = q01 - q02;
+
+dtdz = (.5/(G*A1sum))*((q01/t_skin)*L1sum + (q01 - q02) * h_spar(1)/t_spar + c1*sumA1(1)/t_skin + c2*sumA1(2)/t_skin)
+
+
+
 
 
 % shear stress tau
 %
 % please calculate the shear stress from the shear flow
+
+shearStress = zeros(1,length(q));
+
 %
