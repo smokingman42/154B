@@ -1,0 +1,10 @@
+c	1.5[m]	Chord Length
+b	10.82[m]	Span
+e	0.79	Oswald Efficiency Factor
+S	b*c	Wing Area
+A	b^2/S	Aspect Ratio
+t_skin	.25[cm]	Skin Thickness
+alpha	10[deg]	Angle of Attack
+L	10000	Total Lift
+D	1000	Total Drag
+v	45[m/s]	Velocity
