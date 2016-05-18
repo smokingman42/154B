@@ -1,0 +1,14 @@
+c 1.5[m] Chord Length
+b 10.82[m] Span
+e 0.79 Oswald Efficiency Factor
+S b*c Wing Area
+A b^2/S Aspect Ratio
+alpha 19[deg] Angle of Attack
+L n*W Total Lift
+D 0.5*rho*vel^2*S*(Cdo+CL^2/pi/A/e) Total Drag
+vel 59.535[m/s] Velocity
+n 4.4
+CL 2*L/rho/vel^2/S
+rho 1.225[kg/m^3]
+W 1100*9.81[N]
+Cdo 0.00586
