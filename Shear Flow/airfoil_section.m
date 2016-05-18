@@ -1,9 +1,9 @@
-function [c,Ixx,Iyy,Ixy,x,yU,yL,x_strU,x_strL,x_skinU,x_skinL,L_skinU,L_skinL,x_spar,h_spar,i_spar,dx] = airfoil_section(A_cap,A_str,t_spar,t_skin,x_spar,x_strU,x_strL)
+function [c,Ixx,Iyy,Ixy,x,yU,yL,x_strU,x_strL,x_skinU,x_skinL,L_skinU,L_skinL,x_spar,h_spar,i_spar,dx,y_strU, y_strL] = airfoil_section(A_cap,A_str,t_spar,t_skin,x_spar,x_strU,x_strL)
 %% airfoil section profile
 % NACA 2412
 m = 0.02;
 p = 0.4;
-t = 0.12;
+t = 0.15;
 
 c = 1.5;             % chord length
 nx = 500;               % number of increments
@@ -110,6 +110,8 @@ end
 Cx_sum = 0;
 Cy_sum = 0;
 A_sum = 0;
+y_strL = zeros(1,n_strL);
+y_strU = zeros(1,n_strU);
 
 % Spars
 for i = 1:n_spar
@@ -120,13 +122,14 @@ end
 
 % Upper Stringers
 for i = 1:n_strU
+    y_strU(i) = yU(i_strU(i));
     Cx_sum = Cx_sum + x_strU(i)*A_str;
     Cy_sum = Cy_sum + yU(i_strU(i))*A_str;
     A_sum = A_sum + A_str;
 end
-
 % Lower Stringers 
 for i = 1:n_strL
+    y_strL(i) = yL(i_strL(i));
     Cx_sum = Cx_sum + x_strU(i)*A_str;
     Cy_sum = Cy_sum + yL(i_strL(i))*A_str;
     A_sum = A_sum + A_str;
@@ -268,12 +271,16 @@ end
 % x_strU Transformation
 for i = 1:length(x_strU)
     x_strU(i) = x_strU(i) - Cx;
+    y_strU(i) = y_strU(i) - Cy;
 end
 
 % x_strL Transformation
 for i = 1:length(x_strL)
     x_strL(i) = x_strL(i) - Cx;
+    y_strL(i) = y_strL(i) - Cy;
 end
+Cx
+Cy
 
 
 Cx = 0;
@@ -289,7 +296,7 @@ plot(x_spar,yU(i_spar),'sg',x_spar,yL(i_spar),'sg','markersize',7);
 plot(Cx,Cy,'m*')
 ylabel('y (m)')
 xlabel('x (m)')
-title('Origin: Centroid')
+legend('Skin','', 'Stringer','','Spar','','Spar Cap')
 grid on
 
 figure

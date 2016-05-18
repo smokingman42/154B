@@ -10,6 +10,7 @@ bl = 0.015; %m bracket height
 bt = 0.0025; %m bracket thickness`
 theta = 30; %degrees
 alpha = 10; %degrees
+E = 70e9;  
 G = E/(2+.6666); % for twist angle Shear modulus
 
 %% Sea Level Analysis
@@ -167,20 +168,20 @@ legend('Wy PHAA','Wy PLAA','Wy NHAA','Wy Negative Dive Gust','Wy Negative Cruise
 
 %% airfoil section properties
 sh = 0.08; %m
-st = 0.0025; %m spar thickness
+st = 0.025; %m spar thickness
 kt = 0.001016; %m skin thickness
 
-A_cap = 1e-5;
-A_str = 5e-6;
+A_cap = 5e-5;
+A_str = 2.5e-5;
 t_spar = st;
 t_skin = kt;
 t_plate = t_skin;
 % locations of spars, spar caps and stringers (nose at the origin of the coordinate)
 x_spar0 = .5;                       % front spar (2 cell beam)
-x_strU0 = [0 .15 .3 .7 .9];                     % upper surface
-x_strL0 = [0 .15 .3 .7 .9];                     % lower surface
+x_strU0 = [0 .15 .3 .7 .95];                     % upper surface
+x_strL0 = [0 .15 .3 .7 .95];                     % lower surface
 % new coordinate with origin at the centroid is used for the output below
-[c,Ixx,Iyy,Ixy,x,yU,yL,x_strU,x_strL,x_boomU,x_boomL,L_boomU,L_boomL,x_spar,h_spar,i_spar,dx] = airfoil_section(A_cap,A_str,t_spar,t_skin,x_spar0,x_strU0,x_strL0);
+[c,Ixx,Iyy,Ixy,x,yU,yL,x_strU,x_strL,x_boomU,x_boomL,L_boomU,L_boomL,x_spar,h_spar,i_spar,dx,y_strU,y_strL] = airfoil_section(A_cap,A_str,t_spar,t_skin,x_spar0,x_strU0,x_strL0);
 
 %x_boomU = x_skinU = position of elements (nodes). Nodes at stringers and
 %spar caps and in between each
@@ -293,7 +294,7 @@ legend('Sy PHAA','Sy PLAA','Sy NHAA','Sy Negative Dive Gust','Sy Negative Cruise
 
 
 %% calculate deflection u & v along z axis from root to tip
-E = 70e9;                             % modulus of the material
+                           % modulus of the material
 K = 1/(E*(Ixx*Iyy - Ixy^2));
 ddu = -K.*(-Ixy.*Mx0 + Ixx.*My0);
 ddv = -K.*(Iyy.*Mx0 - Ixy.*My0);
@@ -325,7 +326,7 @@ xspar1 = x(i_spar(1))*ones(1,nspars+1); % corresponding x position for spar 1
 yspar2 = yL(i_spar(2)):(h_spar(2))/nspars:yU(i_spar(2)); % points along spar 2
 xspar2 = x(i_spar(2))*ones(1,nspars+1); % corresponding x position for spar 1
 
-xs = [flip(x),x,xspar1,xspar2];
+xs = [flip(x),x,xspar1,xspar2]; % array of x coordinates going from te to te then 10 poitns for front and rear spar each
 ys = [flip(yU),yL,yspar1,yspar2];
 Sig_z = zeros(1,length(xs));
 
@@ -339,6 +340,7 @@ figure(15)
 hold on;
 scatter(xs,Sig_z)
 ylabel('Stress_{zz} at Sea Level(N/m^2)');
+xlabel('x (m)');
 legend('PHAA','PLAA','NHAA','Negative Dive Gust','Negative Cruise Gust');
 
 end
@@ -560,6 +562,7 @@ plot([x(end),x(end)],[yU(end),yL(end)],'b',[x_spar(1),x_spar(1)],[yU(i_spar(1)),
 ylim([-0.3 0.3]) 
 xlabel('x (m)')
 ylabel('y (m)')
+legend('Boom!')
 title('Boom Distribution')
 grid on
 
@@ -579,7 +582,7 @@ A1sum = sum(A1); % Area of cell closest to LE
 A2sum = Asum - A1sum; % Area of cell nearest to TE
 
 % calcualte qb at the root of the wing 
-qb = zeros(1,nq-1);
+qb = zeros(1,nq);
 % CHECK C1 and C2 
 c1 = (Sy0(1)*Ixy - Sx0(1)*Ixx)/(Ixx*Iyy - Ixy^2);
 c2 = (Sx0(1)*Ixy - Sy0(1)*Iyy)/(Ixx*Iyy - Ixy^2);
@@ -659,8 +662,8 @@ for i = 1 : length(qb1) % cell 1
 end
 
 for i = 1 : nq - i_A1(2) % bottom cell 2 
-    j = i + i_A1(2) - 1;
-    k = j-length(qb2);
+    j = i + i_A1(2)-1;
+    k = j-length(qb2)+1;
     q(j) = qb2(k) + q02;
 end
 
@@ -670,16 +673,47 @@ q(end) = q02;
 
 q_spar = q01 - q02;
 
-dtdz = (.5/(G*A1sum))*((q01/t_skin)*L1sum + (q01 - q02) * h_spar(1)/t_spar + c1*sumA1(1)/t_skin + c2*sumA1(2)/t_skin)
+dtdz = (.5/(G*A1sum))*((q01/t_skin)*L1sum + (q01 - q02) * h_spar(1)/t_spar + c1*sumA1(1)/t_skin + c2*sumA1(2)/t_skin);
 
 
+% CHECKS
 
+% CHECK 1: final element of qb goes to close to zero.... check
+qbEnd = 100*qb(end)/max(abs(qb));
 
+% CHECK 2,3: SX = sum of (qi*(x_i+1 - x_i) same for SY
+SxShear = zeros(1,length(qb));
+SyShear = zeros(1,length(qb)+1);
 
+ for i = 1:length(SxShear)-1;
+     SxShear(i) = q(i)*(x_boom(i+1) - x_boom(i));
+     SyShear(i) = q(i)*(y_boom(i+1) - y_boom(i));
+ end
+ 
+ % ends that dont meet in x_boom and y_boom so do ends manuaully ..
+ % SxCh assuming that end spars always mounted verticaly 
+ SyShear(end-1) = q(end)*(y_boom(1)-y_boom(end));
+ SyShear(end) = q_spar*(h_spar(1));
+ 
+ SyCheck = [sum(SyShear) Sy0(1)];
+ SxCheck = [sum(SxShear) Sx0(1)];
+ 
+ % Percent difference between shear applied to estimated by shear flow 
+ SyCheck(3) = 100*(SyCheck(1)-SyCheck(2))/(SyCheck(2));
+ SxCheck(3) = 100*(SxCheck(1)-SxCheck(2))/(SxCheck(2));
+ 
+ % CHECK 4: 
 % shear stress tau
-%
 % please calculate the shear stress from the shear flow
 
-shearStress = zeros(1,length(q));
+shear = zeros(1,length(q));
 
-%
+for i = 1:length(shear);
+    shear(i) = q(i)*kt*B(i);
+end
+
+TotalShearCheck = sum(shear);
+
+
+
+[ribSpacing, maxStringerStress, strStress] = buckle(Mx0,My0,Ixx, Iyy, Ixy,x_strU,y_strU,x_strL,y_strL, A_str,E);
